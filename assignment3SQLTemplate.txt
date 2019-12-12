@@ -1,0 +1,183 @@
+--ASSIGNMENT 3 
+--Johnny Li
+--------------------
+
+--YOUR VIEWS HERE 
+---------------------------------------------------------------------------------
+%%%1
+--------------------
+--Queue Question 1
+SELECT DISTINCT p.NAME
+FROM PARTICIPATED P, CLIMBED CD
+WHERE P.TRIP_ID = CD.TRIP_ID AND CD.PEAK = "Pilot Knob (S)";
+--------------------
+
+%%%2 
+--------------------
+--Queue Question 2
+SELECT DISTINCT CD.PEAK
+FROM PARTICIPATED P, CLIMBED CD
+WHERE P.TRIP_ID = CD.TRIP_ID AND P.name = "MARK";
+--------------------
+
+%%%3
+--------------------
+--Queue Question 3
+SELECT DISTINCT PNAME
+FROM PEAK PK, 
+	(SELECT CD.PEAK AS CDPEAK, P.name AS PNAME
+     FROM PARTICIPATED P, CLIMBED CD
+     WHERE P.trip_id = CD.trip_id) 
+WHERE PK.diff="5" AND PK.NAME=CDPEAK;
+--------------------
+
+%%%4
+--------------------
+--Queue Question 4
+SELECT GPEAK
+FROM (
+  SELECT CD.PEAK AS GPEAK, COUNT(CD.WHEN_CLIMBED) as NUM
+  FROM CLIMBED CD
+  GROUP BY CD.PEAK
+  )
+ WHERE NUM = 1;
+--------------------
+
+%%%5
+--------------------
+--Queue Question 5
+SELECT DISTINCT CDPEAK
+FROM PEAK PK, 
+	(SELECT CD.PEAK AS CDPEAK
+     FROM PARTICIPATED P, CLIMBED CD
+     WHERE P.trip_id = CD.trip_id AND P.name="JOHN") 
+WHERE PK.elev>14000 AND PK.NAME=CDPEAK;
+--------------------
+
+%%%6
+--------------------
+--Queue Question 6
+SELECT PKMAP
+FROM (
+  SELECT PK.MAP AS PKMAP, MAX(PK.elev) AS TOP, MIN(PK.elev) AS BOT
+  FROM PEAK PK
+  GROUP BY PK.map
+  )
+ WHERE TOP-BOT>2000;
+--------------------
+
+%%%7 
+--------------------
+--Queue Question 7
+SELECT DISTINCT PKMAP, average
+FROM (
+  SELECT PK.MAP AS PKMAP, AVG(PK.elev) AS average
+  FROM PEAK PK
+  GROUP by PK.map
+  )
+  ORDER BY average;
+--------------------
+
+%%%8
+------------------------------------------------------------------------------
+--Queue Question 8
+SELECT DISTINCT CD.PEAK
+FROM PARTICIPATED P, CLIMBED CD
+WHERE P.TRIP_ID = CD.TRIP_ID AND P.NAME = "MARK" INTERSECT 
+  SELECT DISTINCT CD2.PEAK
+  FROM PARTICIPATED P2, CLIMBED CD2
+  WHERE P2.TRIP_ID = CD2.TRIP_ID AND P2.NAME = "MARY";
+--------------------
+
+%%%9
+--------------------
+--Queue Question 9
+SELECT DISTINCT PKREGION, COUNT(PKNAME)
+FROM(
+    SELECT PK.region AS PKREGION, PK.NAME AS PKNAME
+    FROM PEAK PK
+    WHERE PK.name not in (
+      SELECT PEAK 
+      FROM CLIMBED)
+  	)
+GROUP BY PKREGION
+--------------------
+
+%%%10
+--------------------
+--Queue Question 10
+SELECT DISTINCT CD.trip_id
+FROM PEAK PK, CLIMBED CD, PARTICIPATED P
+WHERE PK.name=CD.PEAK AND P.trip_id=CD.TRIP_ID
+GROUP BY CD.trip_id HAVING SUM(PK.elev)>500000
+--------------------
+
+%%%11
+--------------------
+--Queue Question 11
+SELECT DISTINCT CR2.sex, NUM/COUNT(CR2.name)
+FROM CLIMBER CR2, (
+  SELECT CR.sex AS psex, COUNT (CD.PEAK) AS NUM                       
+  FROM CLIMBED CD, PARTICIPATED P, CLIMBER CR
+  WHERE CR.name = P.name AND
+      P.trip_id = CD.trip_id
+  GROUP BY CR.SEX
+  )
+WHERE CR2.SEX = psex
+GROUP BY CR2.SEX
+--------------------
+
+%%%12 
+--------------------
+--Queue Question 12
+SELECT DISTINCT P2.NAME
+FROM PARTICIPATED P2, CLIMBED CD, (
+  SELECT P.trip_id AS PTRIP, CD.PEAK AS CDPEAK
+  FROM PARTICIPATED P, CLIMBED CD
+  WHERE P.name="MARIA" AND CD.TRIP_ID=P.trip_id )
+WHERE PTRIP=CD.TRIP_ID=P2.trip_id AND CD.PEAK=CDPEAK;
+--------------------
+
+%%%13
+--------------------
+--Queue Question 13
+SELECT PK.region, ROUND(COUNT(DISTINCT PK.name)*1.0/MOUNT,4) 
+FROM PEAK PK, CLIMBED CD, (
+  SELECT PK2.region, COUNT(DISTINCT PK2.name) AS MOUNT
+  FROM PEAK PK2, CLIMBED CD2
+  GROUP BY PK2.region
+  )
+WHERE CD.PEAK=PK.name
+GROUP BY PK.region;
+--------------------
+
+%%%14
+--------------------
+--Queue Question 14
+SELECT P.Name, P2.Name, COUNT( DISTINCT CD.peak ) AS num_peaks_climbed
+FROM PARTICIPATED P INNER JOIN  PARTICIPATED p2 ON (P.trip_id = P2.trip_id),
+    PARTICIPATED INNER JOIN CLIMBED CD ON (P.trip_id = CD.trip_id )
+WHERE P.name > P2.name
+GROUP BY P.Name, P2.Name 
+HAVING COUNT(DISTINCT P.trip_id) != 0
+ORDER BY num_peaks_climbed DESC
+--------------------
+
+%%%15
+--------------------
+--Queue Question 15
+WITH TP AS (SELECT CD.PEAK, CD.when_climbed, P.NAME
+ FROM CLIMBED CD
+ INNER JOIN PARTICIPATED P ON P.TRIP_ID = CD.TRIP_ID
+)
+
+SELECT DISTINCT NAME
+FROM (SELECT T1.NAME
+  FROM TP T1
+  LEFT JOIN TP T2 ON T1.NAME = T2.NAME AND 
+	(T2.when_climbed > T1.when_climbed OR (T2.when_climbed=T1.when_climbed AND T2.PEAK>T1.PEAK)) 
+  WHERE julianday(T2.when_climbed)- julianday(T1.when_climbed)>60	
+  )
+GROUP BY NAME
+HAVING COUNT(*) > 20
+--------------------
